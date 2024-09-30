@@ -187,8 +187,85 @@ class BasicEnemy extends Phaser.Physics.Arcade.Sprite{
     this.power=1
     this.radius = 0
     this.birth = true
-    this.setBounce(1)
+    this.setBounce(2)
+    this.setDamping(true);
+    this.setDrag(0.2 );
+    this.maxRotationSpeed = 100;
+    this.angularAcceleration = 10;
     
+  }
+
+  async hit(that) {
+    let object = that.constructor.name
+    switch(object) {
+      case "Bullet":
+        if(that.visible == false) {
+          return
+         }
+         that.setVisible(false)
+        setTimeout(async () => {
+          that.setActive(false)
+          that.setVisible(false)
+          that.destroy();
+          this.health = this.health - that.damage
+          if (this.health <= 0) {
+            this.setTintFill(0xff0051);
+             await spawnUpgrade(this.x, this.y, this.power)
+             
+          }
+          else {
+            this.setTintFill(0xffffff);
+          }
+          bulletBasicEnemyOverlap.active=false
+        },5);
+        setTimeout(async () => { 
+          if (this.health <= 0){
+           await this.spawn()
+          }
+          this.clearTint()
+          bulletBasicEnemyOverlap.active=true
+        }, 50);
+        break;
+      case "BasicEnemy":
+        basicEnemyCollision.active=false
+      if(this.scale <= 50) {
+        this.setScale(this.scale +(that.scale/40))
+        this.health = this.health + that.health
+        this.speed = 250*(1/this.scale);
+      }
+      that.health=0
+      this.setTintFill(0xfff5a2);
+      that.setTintFill(0xfff5a2);
+      setTimeout(async () => { 
+      if (that.health <= 0){
+        this.power = Phaser.Math.Clamp(this.power + that.power,1,10)
+        await that.spawn()
+        await this.clearTint()
+        await that.clearTint()
+      }
+      basicEnemyCollision.active=true
+    }, 50);
+        break
+      default:
+        this.health--
+        player.setTint(0xff0051)
+        if (this.health <= 0) {
+          this.setTintFill(0xff0051);
+        }
+        else {
+          this.setTintFill(0xffffff);
+        }
+          setTimeout(async () => {
+            if (this.health <= 0) {
+              await this.spawn()
+            }
+            this.clearTint()
+            player.clearTint()
+          }, 50);
+        break;
+    }
+    return
+      
   }
 
   scaling(min, max) {
@@ -203,7 +280,9 @@ class BasicEnemy extends Phaser.Physics.Arcade.Sprite{
   spawn(){
     this.clearTint()
     this.setScale(this.scaling(0.9,2));
+    this.acceleration = 0.1
     this.speed = 250*(1/this.scale);
+    this.setMaxVelocity(this.speed)
     this.power= Math.floor(this.scale)
     if (this.birth == true) {
       this.radius = this.body.width/2
@@ -221,32 +300,23 @@ class BasicEnemy extends Phaser.Physics.Arcade.Sprite{
     const offsetY = radius * Math.sin(angle);
     const posX = player.x + offsetX;
     const posY = player.y + offsetY;
-    
     this.setPosition(posX, posY);
-    
-    
+
   }
 
   update(time,delta){
     this.setActive(true);
     this.setVisible(true);
-   // Calculate the direction from enemy to player
-   const dx = player.x - this.x;
-   const dy = player.y - this.y;
-   
-   // Calculate the distance
-   const distance = Math.sqrt(dx * dx + dy * dy);
-   
-   // Normalize the direction
-   const directionX = dx / distance;
-   const directionY = dy / distance;
-   
+    let angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y );
+    this.rotation = Phaser.Math.Angle.RotateTo(this.rotation, angle, 0.01)
+  
 
-   // Apply the velocity to the enemy
-   this.setVelocityX(directionX * this.speed);
-   this.setVelocityY(directionY * this.speed);
-    
+    // Calculate the movement direction based on the object's current angle
+    let radians = Phaser.Math.DegToRad(this.angle);
 
+    // Apply velocity in the direction the object is facing (based on its rotation)
+    this.body.velocity.x = Math.cos(radians) * this.speed;
+    this.body.velocity.y = Math.sin(radians) * this.speed;
   }
 }
 class Bullet extends Phaser.Physics.Arcade.Sprite {
@@ -274,7 +344,6 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
       this.setVisible(true);
       this.setScale(1)
 
-      
       const velocity = this.velocity
       const spread = this.spread
       const deviation = Math.random() * (spread - (0-spread)) + (0-spread);
@@ -310,16 +379,10 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
       // Add the player's velocity to the bullet's velocity
       this.body.velocity.x = bulletVelocityX + (player.body.velocity.x/2);
       this.body.velocity.y = bulletVelocityY + (player.body.velocity.y/2);
-    
   }
-  
 
-  update(time, delta) {  
-
+  update(time, delta) {
       
-     
-        // Create a tween to transition from white to yellow
-      //this.setAlpha(this.scale/1)
       if (this.scale < 1) {
         this.clearTint()
         this.body.velocity.x = this.body.velocity.x/1.01;
@@ -328,13 +391,8 @@ class Bullet extends Phaser.Physics.Arcade.Sprite {
         this.body.velocity.x = this.body.velocity.x*1.1;
         this.body.velocity.y = this.body.velocity.y*1.1;
       }
-
-
-     
-      
       this.setScale(this.scaleX - upgrade.range)
     if (this.scale < 0.4 || this.body.velocity < 12 ){
-      console.log(upgrade.range)
       this.setActive(false)
       this.setVisible(false)
     }  
@@ -435,6 +493,9 @@ let player_acceleration = 0
 let player_speed = 1800
 let frames = 0
 let maxVelocity = 1200 + upgrade.speed
+let basicEnemyCollision
+let playerBasicEnemyCollision
+let bulletBasicEnemyOverlap
 
 // Preload function (load assets)
 function preload() {
@@ -466,8 +527,8 @@ function create() {
   player.setDamping(true);
   player.setDrag(0.2 );  // Simulates space friction
   player.setMaxVelocity(maxVelocity);
-  player.setBounce(3)
-  player.body.setCircle(player.body.width/2);
+  player.setBounce(2)
+  player.body.setCircle((player.body.width*1.3)/2);
 
   // Create a group of bullets (for shooting)
   bullets = this.physics.add.group({
@@ -484,7 +545,7 @@ function create() {
 
   basicEnemies = this.physics.add.group({
     classType: BasicEnemy,
-    maxSize: 100,
+    maxSize: 20,
     runChildUpdate: true,
   });
 
@@ -503,50 +564,9 @@ function create() {
 
   this.time.delayedCall(500, () => {
     // Enable collision detection between enemies
-let basicEnemyCollision = this.physics.add.overlap(basicEnemies, basicEnemies, function response (e1, e2) {
-  basicEnemyCollision.active=false
-  if(e1.scale> e2.scale) {
-    if(e1.scale <= 50) {
-      e1.setScale(e1.scale +(e2.scale/40))
-      e1.health = e1.health + e2.health
-      e1.speed = 250*(1/e1.scale);
-    }
-    e2.health=0
-    e1.setTintFill(0xfff5a2);
-    e2.setTintFill(0xfff5a2);
-    setTimeout(async () => { 
-    if (e2.health <= 0){
-      e1.power = Phaser.Math.Clamp(e1.power + e2.power,1,10)
-      await e2.spawn()
-      await e1.clearTint()
-      await e2.clearTint()
-    }
-    
-    basicEnemyCollision.active=true
-    }, 50);
-  } else {
-    if(e2.scale <= 50) {
-      e2.setScale(e2.scale +(e1.scale/40))
-      e2.health = e2.health + e1.health
-      e2.speed = 250*(1/e2.scale);
-    }
-    e1.health=0
-    e2.setTintFill(0xfff5a2);
-    e1.setTintFill(0xfff5a2);
-    setTimeout(async () => { 
-      if (e1.health <= 0){
-        e2.power = Phaser.Math.Clamp(e1.power + e2.power,1,10)
-        
-        await e1.spawn()
-        await e1.clearTint()
-        await e2.clearTint()
-    }
-    
-    
-    basicEnemyCollision.active=true
-  }, 50);
-  }
-  
+basicEnemyCollision = this.physics.add.collider(basicEnemies, basicEnemies, function response (e1, e2) {
+  if(e1.scale> e2.scale) {e1.hit(e2)} 
+  else {e2.hit(e1)}
 });
 let upgradePlayer =this.physics.add.overlap(player, upgrades, function collectUpgrade(player, upgradeObj) {
   let power = Math.floor(upgradeObj.power)
@@ -561,7 +581,6 @@ let upgradePlayer =this.physics.add.overlap(player, upgrades, function collectUp
       break;
     case 2:
       if (maxVelocity <= 1800) {
-        console.log(maxVelocity)
         upgrade.speed = upgrade.speed + (50*power);
         maxVelocity =  Phaser.Math.Clamp(maxVelocity + upgrade.speed, 0, 1800)
         player.setMaxVelocity(maxVelocity);
@@ -601,57 +620,14 @@ let upgradePlayer =this.physics.add.overlap(player, upgrades, function collectUp
   
 })
 
-let bulletBasicEnemyOverlap = this.physics.add.overlap(basicEnemies, bullets, function hitBasicEnemy(enemy, bullet) {
-  if(bullet.visible == false) {
-   return
-  }
-  bullet.setVisible(false)
- setTimeout(async () => {
-   bullet.setActive(false)
-   bullet.setVisible(false)
-   bullet.destroy();
-   enemy.health = enemy.health - bullet.damage
-   if (enemy.health <= 0) {
-     enemy.setTintFill(0xff0051);
-      await spawnUpgrade(enemy.x, enemy.y, enemy.power)
-      
-   }
-   else {
-     enemy.setTintFill(0xffffff);
-   }
-   bulletBasicEnemyOverlap.active=false
- },5);
- 
- 
- setTimeout(async () => { 
-   if (enemy.health <= 0){
-    await enemy.spawn()
-   }
-   enemy.clearTint()
-   bulletBasicEnemyOverlap.active=true
- }, 50);
- 
+bulletBasicEnemyOverlap = this.physics.add.overlap(basicEnemies, bullets, function hitBasicEnemy(enemy, bullet) {
+  enemy.hit(bullet)
 }) 
 
-let playerBasicEnemyCollision = this.physics.add.collider(basicEnemies, player, function hitBasicEnemy(player, enemy) {
-  enemy.health--
-  player.setTint(0xff0051)
-  if (enemy.health <= 0) {
-    enemy.setTintFill(0xff0051);
-  }
-  else {
-    enemy.setTintFill(0xffffff);
-  }
-    setTimeout(async () => {
-      if (enemy.health <= 0) {
-        await enemy.spawn()
-      }
-      enemy.clearTint()
-      player.clearTint()
-    }, 50);
-    
-  }) 
-  })
+playerBasicEnemyCollision = this.physics.add.collider(basicEnemies, player, function hitBasicEnemy(player, enemy) {
+  enemy.hit(player)
+})
+})
 
   // Set up spacebar for thrusting
   this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -696,7 +672,7 @@ function update(time, delta) {
 
   if (this.input.gamepad && this.input.gamepad.total > 0) {
     const gamepad = this.input.gamepad.getPad(0);
-    console.log(gamepad)
+    
 
     if (gamepad) {
         this.handleGamepadInput(gamepad, delta);
@@ -842,7 +818,8 @@ function spawndashLine() {
 // Function to shoot a bullet
 function shootBullet() {
     const bullet = bullets.get(player.x, player.y);
-    if (frames % upgrade.firerate == 0 ) {
+    if (frames % upgrade.firerate == 0 && player.rotation != null && bullet != null ) {
+      console.log(player.rotation)
       bullet.fire(player.rotation);
     }
     
@@ -860,10 +837,8 @@ function shootBullet() {
 
   function lastPositionLogic(x,y) {
     if (lastPosition = {x: x, y: y }) {
-      //console.log("NOT MOVING")
     }
     else {
-      console.log("MOVING")
     }
     lastPosition = {
       x: x,
@@ -873,7 +848,6 @@ function shootBullet() {
   }
 
   function onGamepadConnected(gamepad) {
-    console.log('Gamepad connected:', gamepad.id);
 }
 
 function handleGamepadInput(gamepad, delta) {
@@ -889,6 +863,5 @@ function handleGamepadInput(gamepad, delta) {
 
     // Example: Checking for button press (A button)
     if (gamepad.A) {
-        console.log('A button pressed');
     }
 }
