@@ -1,7 +1,8 @@
-import './style.css';
-import Phaser from 'phaser';
 
-// Define the Bullet class first
+//import Phaser from 'phaser';
+//import './style.css';
+const path = require('path'); 
+
 
 class MainMenuScene extends Phaser.Scene {
   constructor() {
@@ -9,15 +10,24 @@ class MainMenuScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.glsl('bloom', 'assets/shaders/shader0.frag');
-    this.load.glsl('pixelate', 'assets/shaders/pixelate.frag');
-    this.load.image('background', '/assets/tiled-bg.png');
-    this.load.image('playerShip', '/assets/player.png');
-    this.load.image('bullet', '/assets/bullet.png'); 
-    this.load.image('dashLine', '/assets/dash-line.png');
-    this.load.image('basicEnemy', '/assets/basic-enemy.png')
-    this.load.image('upgrade', '/assets/upgrade-base.png')
-    this.load.image('cursor', '/assets/cursor.png')
+    const cursorPath = path.join(__dirname, 'assets', 'cursor.png');
+    const backgroundPath = path.join(__dirname, 'assets', 'tiled-bg.png');
+    const playerShipPath = path.join(__dirname, 'assets', 'player.png');
+    const bulletPath = path.join(__dirname, 'assets', 'bullet.png');
+    const dashLinePath = path.join(__dirname, 'assets', 'dash-line.png');
+    const basicEnemyPath = path.join(__dirname, 'assets', 'basic-enemy.png');
+    const upgradePath = path.join(__dirname, 'assets', 'upgrade-base.png');
+
+    // Preload images
+    this.load.image('cursor', `file://${cursorPath}`)
+    this.load.image('background', `file://${backgroundPath}`);
+    this.load.image('playerShip', `file://${playerShipPath}`);
+    this.load.image('bullet', `file://${bulletPath}`);
+    this.load.image('arc', `file://${bulletPath}`);
+    this.load.image('dashLine', `file://${dashLinePath}`);
+    this.load.image('basicEnemy', `file://${basicEnemyPath}`);
+    this.load.image('upgrade', `file://${upgradePath}`);
+    
   }
 
   create() {
@@ -109,16 +119,6 @@ class MainGameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.glsl('bloom', 'assets/shaders/shader0.frag');
-    this.load.glsl('pixelate', 'assets/shaders/pixelate.frag');
-    this.load.image('background', '/assets/tiled-bg.png');
-    this.load.image('playerShip', '/assets/player.png');
-    this.load.image('bullet', '/assets/bullet.png'); 
-    this.load.image('arc', '/assets/arc.png'); 
-    this.load.image('dashLine', '/assets/dash-line.png');
-    this.load.image('basicEnemy', '/assets/basic-enemy.png')
-    this.load.image('upgrade', '/assets/upgrade-base.png')
-    this.load.image('cursor', '/assets/cursor.png')
   }
 
   create() {
@@ -291,7 +291,9 @@ class MainGameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
+    //frames = frames + (Math.ceil(time/100000))
     frames++
+    console.log(delta)
     if (frames <= 100) {
       player.setAlpha(0)
     }
@@ -1058,7 +1060,7 @@ class Arc extends Phaser.Physics.Arcade.Sprite {
   update(time, delta) {
 
       if (frames % 5 == 0) {
-      let spread = Phaser.Math.Clamp(2 - (upgrade.spread*0.5), 0.9, 2)
+      let spread = Phaser.Math.Clamp(1.4 - (upgrade.spread*0.1), 0.9, 1.4)
       let deviation = Math.random() * (spread - (0-spread)) + (0-spread);
       let angle = (this.rotation + deviation);
       this.setRotation(angle)
@@ -1069,7 +1071,7 @@ class Arc extends Phaser.Physics.Arcade.Sprite {
       this.damage/2
       if (randomInt >= 1){
         let projectile = arcs.get(player.x, player.y);
-        spread = Phaser.Math.Clamp(2 - (upgrade.spread*0.5), 0.9, 2)
+        spread = Phaser.Math.Clamp(1.4 - (upgrade.spread*0.1), 0.9, 1.4)
         deviation = Math.random() * (spread - (0-spread)) + (0-spread);
         angle = (this.rotation + deviation) + Math.PI / 2;
         projectile.fire(angle, this.scale, this.x, this.y, this.weapon);
@@ -1086,7 +1088,7 @@ class Arc extends Phaser.Physics.Arcade.Sprite {
         //this.body.velocity.x = this.body.velocity.x*1.1;
         //this.body.velocity.y = this.body.velocity.y*1.1;
       }
-      this.setScale(this.scaleX - (4*upgrade.range) * (Phaser.Math.Clamp(upgrade.bulletspeed/2500, 1, 10000)))
+      this.setScale(this.scaleX - (4*upgrade.range) * (Phaser.Math.Clamp(upgrade.bulletspeed/2500, 1, 8000)))
     if (this.scale < 0.4 || this.body.velocity < 12 ){
       this.setActive(false)
       this.setVisible(false)
@@ -1115,27 +1117,25 @@ class Cursor extends Phaser.Physics.Arcade.Sprite {
   }
 }
 
-
-
 // Game configuration
 const config = {
   type: Phaser.WEBGL,
   width: window.innerWidth,
     height: window.innerHeight,
-    scale: {
-        mode: Phaser.Scale.RESIZE,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-    },
+    
   backgroundColor: '#000000',
   physics: {
     default: 'arcade',        
     arcade: {
+      
+      fixedStep: true,
       fps: 144,          // Sets the physics update rate to 60 FPS
       timeStep: 1 / 144,  // Defines the fixed timestep as 1/60 seconds (60Hz)
       debug: false       // Enable this to visualize physics objects (optional)
     }
   },
   fps: {
+    smoothstep: true,
     target: 144,
     forceSetTimeOut: true,
   },
@@ -1143,7 +1143,7 @@ const config = {
     antialias: true,       // Enable anti-aliasing
     antialiasGL: true      // For WebGL rendering
   },
-  pixelArt: true,
+  //pixelArt: true,
   scene: [MainMenuScene, MainGameScene]
 };
 
@@ -1164,11 +1164,11 @@ let weapon = [{
   modifier: "none",
   duration: 5
 },
-{
-  type: "bullet",
-  modifier: "none",
-  duration: 5
-},
+// {
+//   type: "bullet",
+//   modifier: "none",
+//   duration: 5
+// },
 // {
 //   type: "arc",
 //   modifier: "none",
@@ -1213,7 +1213,6 @@ let playerBasicEnemyCollision
 let bulletBasicEnemyOverlap
 let arcBasicEnemyOverlap
 let spawnRate = 50
-
 
 function getFacingPosition(player, distance) {
 
@@ -1293,3 +1292,5 @@ function shootBullet(rotation) {
       upgrade.spawn(x,y,p)
     }
   }
+
+
