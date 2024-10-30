@@ -16,6 +16,7 @@ class MainMenuScene extends Phaser.Scene {
     const bulletPath = path.join(__dirname, 'assets', 'bullet.png');
     const dashLinePath = path.join(__dirname, 'assets', 'dash-line.png');
     const basicEnemyPath = path.join(__dirname, 'assets', 'basic-enemy.png');
+    const enemyFighterPath = path.join(__dirname, 'assets', 'enemy-fighter.png');
     const upgradePath = path.join(__dirname, 'assets', 'upgrade-base.png');
 
     // Preload images
@@ -26,6 +27,7 @@ class MainMenuScene extends Phaser.Scene {
     this.load.image('arc', `file://${bulletPath}`);
     this.load.image('dashLine', `file://${dashLinePath}`);
     this.load.image('basicEnemy', `file://${basicEnemyPath}`);
+    this.load.image('enemyFighter', `file://${enemyFighterPath}`);
     this.load.image('upgrade', `file://${upgradePath}`);
     
   }
@@ -143,6 +145,10 @@ class MainGameScene extends Phaser.Scene {
       player.x = 0
       player.y = 0
       player.body.setCircle((player.body.width*1.3)/2);
+
+      
+
+    
     
       // Create a group of bullets (for shooting)
       bullets = this.physics.add.group({
@@ -165,6 +171,12 @@ class MainGameScene extends Phaser.Scene {
     
       basicEnemies = this.physics.add.group({
         classType: BasicEnemy,
+        maxSize: 200,
+        runChildUpdate: true,
+      });
+
+      enemyFighters =  this.physics.add.group({
+        classType: EnemyFighter,
         maxSize: 200,
         runChildUpdate: true,
       });
@@ -294,6 +306,11 @@ class MainGameScene extends Phaser.Scene {
     //frames = frames + (Math.ceil(time/100000))
     frames++
     console.log(delta)
+    if (delta > 10) {
+      this.physics.world.smoothStep = false;  // Disable smoothStep
+  } else {
+      this.physics.world.smoothStep = true;   // Re-enable smoothStep if delta < 10ms
+  }
     if (frames <= 100) {
       player.setAlpha(0)
     }
@@ -410,7 +427,7 @@ class MainGameScene extends Phaser.Scene {
       if(frames >= 300){
         spawndashLine(player.rotation/2 + - Math.PI / 2)
       }
-      if (frames% spawnRate == 0 && frames >= 1600) {spawnBasicEnemy()}
+      if (frames% spawnRate == 0 && frames >= 1600) {getEnemy()}
       
     }
     
@@ -803,6 +820,206 @@ class BasicEnemy extends Phaser.Physics.Arcade.Sprite{
     this.body.velocity.y = Math.sin(radians) * this.speed;
   }
 }
+
+class EnemyFighter extends Phaser.Physics.Arcade.Sprite{
+  constructor(scene, x, y) {
+    super(scene, x, y, 'enemyFighter');
+    scene.add.existing(this);
+    scene.physics.add.existing(this);
+    this.setActive(false);
+    this.setVisible(false);
+    this.health=0
+    this.speed=0
+    this.power=1
+    this.rotationSpeed = 0
+    this.radius = 0
+    this.birth = true
+    this.death = false
+    this.setBounce(2)
+    this.setDamping(true);
+    this.setDrag(0.2 );
+    this.maxRotationSpeed = 100;
+    this.angularAcceleration = 10;
+    
+  }
+
+  async hit(that) {
+    let object = that.constructor.name
+    switch(object) {
+      case "Bullet":
+        if(that.visible == false) {
+          return
+         }
+         that.setVisible(false)
+        setTimeout(async () => {
+          that.setActive(false)
+          that.setVisible(false)
+          that.body.checkCollision.none = true;
+          this.health = this.health - that.damage
+          if (this.health <= 0) {
+            this.setTintFill(0xff0051);
+             if (this.death == false) {
+              await spawnUpgrade(this.x, this.y, this.power)
+             }
+             this.death = true
+             
+          }
+          else {
+            this.setTintFill(0xffffff);
+          }
+          bulletBasicEnemyOverlap.active=false
+        },5);
+        setTimeout(async () => { 
+          if (this.health <= 0){
+           //await this.spawn(player.x,player.y,8000)
+           this.setActive(false)
+           this.setVisible(false)
+           this.body.checkCollision.none = true;
+          }
+          this.clearTint()
+          bulletBasicEnemyOverlap.active=true
+        }, 50);
+        break;
+      case "Arc":
+        console.log(object)
+        if(that.visible == false) {
+          return
+         }
+         that.setVisible(false)
+        setTimeout(async () => {
+          that.setActive(false)
+          that.setVisible(false)
+          that.body.checkCollision.none = true;
+          this.health = this.health - that.damage
+          if (this.health <= 0) {
+            this.setTintFill(0xff0051);
+             if (this.death == false) {
+              await spawnUpgrade(this.x, this.y, this.power)
+             }
+             this.death = true
+             
+          }
+          else {
+            this.setTintFill(0xffffff);
+          }
+          arcBasicEnemyOverlap.active=false
+        },5);
+        setTimeout(async () => { 
+          if (this.health <= 0){
+           //await this.spawn(player.x,player.y,8000)
+           this.setActive(false)
+           this.setVisible(false)
+           this.body.checkCollision.none = true;
+          }
+          this.clearTint()
+          arcBasicEnemyOverlap.active=true
+        }, 50);
+        break;
+        
+    //   case "BasicEnemy":
+    //     basicEnemyCollision.active=false
+    //   if(this.scale <= 7) {
+    //     this.setScale(this.scale +(that.scale/20))
+    //     this.health = this.health + that.health
+    //     this.speed = 250*(1/this.scale);
+    //   }
+    //   that.health=0
+    //   this.clearTint()
+    //   that.clearTint()
+    //   this.setTintFill(0xfff5a2);
+    //   that.setTintFill(0xfff5a2);
+    //   let posX = (this.x + that.x)/2
+    //   let posY = (this.y + that.y)/2
+    //   setTimeout(async () => { 
+    //   if (that.health <= 0){
+    //     this.power = Phaser.Math.Clamp(this.power + that.power,1,10)
+    //     //await that.spawn(player.x,player.y,8000)
+    //     that.setActive(false)
+    //     that.setVisible(false)
+    //     that.body.checkCollision.none = true;
+    //     await this.clearTint()
+    //     await that.clearTint()
+    //   }
+    // }, 50);
+    // setTimeout(async () => {
+    //   await this.clearTint()
+    //   await that.clearTint()
+    //   basicEnemyCollision.active=true
+    // }, 100)
+        break
+      default:
+        this.health--
+        player.setTint(0xff0051)
+        if (this.health <= 0) {
+          this.setTintFill(0xff0051);
+        }
+        else {
+          this.setTintFill(0xffffff);
+        }
+          setTimeout(async () => {
+            if (this.health <= 0) {
+              //await this.spawn(player.x,player.y,8000)
+              this.setActive(false)
+              this.setVisible(false)
+              this.body.checkCollision.none = true;
+            }
+            this.clearTint()
+            player.clearTint()
+          }, 50);
+        break;
+    }
+    return
+      
+  }
+
+  spawn(x,y,r){
+    this.death = false
+    this.body.checkCollision.none = false
+    this.setActive(true)
+    this.setVisible(true)
+    this.clearTint()
+    this.setScale(1);
+    this.acceleration = 0.1
+    this.speed = 250*(1/this.scale);
+    this.rotationSpeed = Phaser.Math.FloatBetween(0.000001, 0.01);
+    this.setMaxVelocity(this.speed)
+    this.power= Math.floor(this.scale)
+    if (this.birth == true) {
+      this.radius = this.body.width/2
+      this.body.setCircle(this.radius);
+      this.birth = false
+    }
+    this.health=this.scale*1.2
+    //this.setScale(1)
+    const radius = r;
+    const angle = Phaser.Math.FloatBetween(0, 2 * Math.PI);
+    //this.rotation = angle
+    
+    //this.body.setOffset(-this.radius, -this.radius);
+    
+    const offsetX = radius * Math.cos(angle);
+    const offsetY = radius * Math.sin(angle);
+    const posX = x + offsetX;
+    const posY = y + offsetY;
+    this.setPosition(posX, posY);
+
+  }
+
+  update(time,delta){
+    this.setActive(true);
+    this.setVisible(true);
+    let angle = Phaser.Math.Angle.Between(this.x, this.y, player.x, player.y );
+    this.rotation = Phaser.Math.Angle.RotateTo(this.rotation, angle, 0.01)
+  
+
+    // Calculate the movement direction based on the object's current angle
+    let radians = Phaser.Math.DegToRad(this.angle);
+
+    // Apply velocity in the direction the object is facing (based on its rotation)
+    this.body.velocity.x = Math.cos(radians) * this.speed;
+    this.body.velocity.y = Math.sin(radians) * this.speed;
+  }
+}
 class Bullet extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'bullet');
@@ -1121,14 +1338,14 @@ class Cursor extends Phaser.Physics.Arcade.Sprite {
 const config = {
   type: Phaser.WEBGL,
   width: window.innerWidth,
-    height: window.innerHeight,
+  height: window.innerHeight,
     
   backgroundColor: '#000000',
   physics: {
     default: 'arcade',        
     arcade: {
       
-      fixedStep: true,
+      fixedStep: false,
       fps: 144,          // Sets the physics update rate to 60 FPS
       timeStep: 1 / 144,  // Defines the fixed timestep as 1/60 seconds (60Hz)
       debug: false       // Enable this to visualize physics objects (optional)
@@ -1138,12 +1355,13 @@ const config = {
     smoothstep: true,
     target: 144,
     forceSetTimeOut: true,
+    debug: true
   },
   render: {
     antialias: true,       // Enable anti-aliasing
     antialiasGL: true      // For WebGL rendering
   },
-  //pixelArt: true,
+  pixelArt: true,
   scene: [MainMenuScene, MainGameScene]
 };
 
@@ -1159,13 +1377,13 @@ let weapon = [{
   modifier: "none",
   duration: 0
 },
-{
-  type: "arc",
-  modifier: "none",
-  duration: 5
-},
 // {
 //   type: "bullet",
+//   modifier: "none",
+//   duration: 10
+// },
+// {
+//   type: "arc",
 //   modifier: "none",
 //   duration: 5
 // },
@@ -1201,6 +1419,7 @@ let arcs
 let upgrades
 let dashLines;
 let basicEnemies
+let enemyFighters
 let worldBounds = { width: 10000, height: 10000 };  // Large world size
 let moveToPointer = false;
 let shooting = false
@@ -1222,6 +1441,18 @@ function getFacingPosition(player, distance) {
 
   // Return the calculated coordinates
   return { x: facingX, y: facingY };
+}
+
+function getEnemy() {
+  let random = Phaser.Math.Between(1, 10);
+  switch(random){
+    default:
+      spawnBasicEnemy()
+      //spawnEnemyFighter()
+      break
+  }
+
+  
 }
 
 function spawnBasicEnemy(){
@@ -1249,6 +1480,39 @@ function spawnBasicEnemy(){
       posX = enemyX + offsetX;
       posY = enemyY + offsetY;
       enemy = basicEnemies.get(player.x, player.y)
+      if (enemy){
+        enemy.spawn(posX,posY,radius)
+      }
+      reroll = Phaser.Math.Between(0,5)
+    }
+  
+}
+
+function spawnEnemyFighter(){
+  let radius = 200;
+  let enemyX
+  let enemyY
+  let angle
+  let offsetX
+  let offsetY
+  let posX
+  let posY
+  let reroll = Phaser.Math.Between(0,5)
+  
+  let enemy = enemyFighters.getFirstDead(player.x, player.y)
+  console.log(enemyFighters.length)
+  if (enemy){
+    enemy.spawn(player.x,player.y,2000)
+    enemyX = enemy.x
+    enemyY = enemy.y
+  }
+    while (reroll >= 2) {
+      angle = Phaser.Math.FloatBetween(0, 2 * Math.PI);
+      offsetX = radius * Math.cos(angle);
+      offsetY = radius * Math.sin(angle);
+      posX = enemyX + offsetX;
+      posY = enemyY + offsetY;
+      enemy = enemyFighters.get(player.x, player.y)
       if (enemy){
         enemy.spawn(posX,posY,radius)
       }

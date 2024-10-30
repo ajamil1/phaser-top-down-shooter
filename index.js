@@ -2,8 +2,10 @@ import  { app, BrowserWindow } from 'electron';
 import path from 'path'
 function createWindow() {
     const win = new BrowserWindow({
-        width: 600,
-        height: 800,
+        width: 1440,
+        height: 1080,
+        //frame: false,           // Disable window frame
+        transparent: true,      // Make the window background transparent
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false,
