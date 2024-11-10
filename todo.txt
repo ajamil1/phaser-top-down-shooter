@@ -1,0 +1,21 @@
+ENEMIES:
+- Unknown Mass: Mindless Mass in space, chases the player, combine and scale when touching eachother
+- Basic shooting enemy, flies around asteroids, shoots player.
+
+SYSTEMS:
+- Basic Upgrades: dropped from all enemies, upgrades basic properties of ship and weapons
+
+WEAPONS:
+- Arc: Short range, arcs in a wide radius
+- Bullet: Basic projectile, long range, reliable
+- Missile: Homing projectile, explodes on impact
+
+MODIFIERS:
+- Shield: adds a level of shield health to the player, circular sprite around player
+- Arc Impact: Produces arcs in a circular radius on impact
+- Homing: All shot projectiles home in on enemies
+- Explosion impact: Produces circular radial hitbox on impact
+
+
+VISUAL:
+- Ghost Effect: When a certain sped is met, player sprites are spawned in the last position of the player, diminish over time
