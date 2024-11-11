@@ -18,4 +18,4 @@ MODIFIERS:
 
 
 VISUAL:
-- Ghost Effect: When a certain sped is met, player sprites are spawned in the last position of the player, diminish over time
+- Ghost Effect: When a certain speed is met, player sprites are spawned in the last position of the player, diminish over time
