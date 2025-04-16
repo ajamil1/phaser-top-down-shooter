@@ -1,0 +1,12 @@
+LIST OF STUFF TO DO FOR PHASER GAME:
+- HUD
+- Scene change for managing upgrades, modifiers, etc
+- More enemy varients with complex logic/ senses
+- replace seizure flashes with something more subtle
+- Modifiers
+- Upgrade tiers, drop pool, scaling with enemy type and size, or such
+- More weapons with different logic
+- Sound
+- menu options, and functionality
+- Music
+- Full gameplay loop functionality

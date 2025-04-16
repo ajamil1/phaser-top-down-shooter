@@ -1609,7 +1609,7 @@ let bulletEnemyFighterOverlap
 let playerEnemyBulletOverlap
 let enemyBullets
 let arcBasicEnemyOverlap
-let spawnRate = 200
+let spawnRate = 100
 
 function getFacingPosition(player, distance) {
 
