@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "3": "^2.1.0",
-    "phaser": "^3.85.1",
-    "top-down-shooter": "file:"
+    "phaser": "^3.85.1"
   }
 }
